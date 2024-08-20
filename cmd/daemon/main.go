@@ -8,7 +8,7 @@ import (
 )
 
 func main()  {
-  oficonnect_id := os.Args[2]
+  oficonnect_id := os.Args[1]
   log.Printf("[*] Getting events for %s...", oficonnect_id)
 
   bot := oficonnectbot.Bot { OfiConnectID: oficonnect_id }
