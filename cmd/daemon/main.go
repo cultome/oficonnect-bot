@@ -13,6 +13,14 @@ func main() {
 
 	bot := oficonnectbot.BuildBot(oficonnect_id)
 
+	info, err := bot.RetrivePersonalInformation()
+
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	log.Printf("Events for Marshal [%s] %s %s", info.ID, info.Name, info.LastName)
+
 	events, err := bot.RetriveEvents()
 
 	if err != nil {
@@ -39,7 +47,8 @@ func main() {
 				}
 			}
 
-			log.Printf(" - %5t (%2s/xx) - %s\n", evt.Confimed == "1", evt.Quota, evt.EventName)
+			confirmations, _ := bot.RetriveConfirmationsByEvent(evt.EventID)
+			log.Printf(" * %5t (%2s/%2d) - %s\n", evt.Confimed == "1", evt.Quota, confirmations, evt.EventName)
 		}
 	}
 }

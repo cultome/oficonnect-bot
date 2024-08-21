@@ -9,24 +9,6 @@ import (
 
 type Client struct{}
 
-type EventsResponse struct {
-	Status string   `json:"status"`
-	Events []*Event `json:"eventos"`
-}
-
-type RegistrationRequest struct {
-	ID       string `json:"id"`
-	EventID  string `json:"id_evento"`
-	UserID   string `json:"id_usuario"`
-	Confimed string `json:"confirmado"`
-}
-
-type RegistrationResponse struct {
-	Status         string `json:"status"`
-	Limit          int    `json:"limite"`
-	TotalConfirmed int    `json:"total_confirmados"`
-}
-
 func BuildClient() *Client {
 	return &Client{}
 }
@@ -62,19 +44,3 @@ func request(url, method string, payload io.Reader) ([]byte, error) {
 
 	return body, err
 }
-
-// func (b *Bot) RetrivePersonalInformation() *PersonalInformation {
-//
-// }
-
-// # documentos
-// 'https://api.oficonnect.omdai.org/public/auth/datos-personales/avisos/obtener/#{oficonnect_id}'
-//
-// # datos personales
-// 'https://api.oficonnect.omdai.org/public/auth/datos-personales/obtener/#{oficonnect_id}'
-//
-// # confirmados por evento?
-// 'https://api.oficonnect.omdai.org/public/auth/eventos-usuario/confirmados/obtener/#{event_id}'
-//
-// # cursos
-// 'https://api.oficonnect.omdai.org/public/auth/cursos-usuario/obtener-todos/#{oficonnect_id}/normal'

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
 )
 
 type Bot struct {
@@ -11,7 +12,41 @@ type Bot struct {
 	Client       *Client
 }
 
-type PersonalInformation struct {
+type MarshalInformation struct {
+	ID             string `json:"id"`
+	CountryID      string `json:"id_pais"`
+	Name           string `json:"nombres"`
+	LastName       string `json:"apellido_paterno"`
+	MotherLastName string `json:"apellido_materno"`
+	Role           string `json:"role"`
+	Email          string `json:"email"`
+	Birthday       string `json:"nacimiento"`
+	Sex            string `json:"sexo"`
+	HomePhone      string `json:"tel_domicilio"`
+	PersonalPhone  string `json:"tel_personal"`
+	English        string `json:"ingles"`
+	Resident       string `json:"residente"`
+	PhotoURL       string `json:"url_foto"`
+	Languages      string `json:"idiomas"`
+	CreatedAt      string `json:"created_at"`
+	BloodType      string `json:"tipo_sangre"`
+	Allergies      string `json:"alergias"`
+	Level          *Level
+}
+
+type Level struct {
+	ID          string `json:"id"`
+	UserLevelID string `json:"id_usuario_nivel"`
+	LevelID     string `json:"id_nivel"`
+	Type        string `json:"tipo"`
+	Name        string `json:"nombre"`
+	Stars       string `json:"estrellas"`
+}
+
+type PersonalInformationResponse struct {
+	Status              string                `json:"status"`
+	PersonalInformation []*MarshalInformation `json:"datos_personales"`
+	Level               []*Level              `json:"nivel"`
 }
 
 type Event struct {
@@ -33,9 +68,36 @@ type Event struct {
 	CreatedAt    string `json:"fecha_creado"`
 }
 
-func BuildBot(oficonnect_id string) *Bot {
+type EventsResponse struct {
+	Status string   `json:"status"`
+	Events []*Event `json:"eventos"`
+}
+
+type RegistrationRequest struct {
+	ID       string `json:"id"`
+	EventID  string `json:"id_evento"`
+	UserID   string `json:"id_usuario"`
+	Confimed string `json:"confirmado"`
+}
+
+type RegistrationResponse struct {
+	Status         string `json:"status"`
+	Limit          int    `json:"limite"`
+	TotalConfirmed int    `json:"total_confirmados"`
+}
+
+type Confirms struct {
+	Count string `json:"confirmados"`
+}
+
+type QuotaResponse struct {
+	Status        string      `json:"status"`
+	Confirmations []*Confirms `json:"confirmados"`
+}
+
+func BuildBot(oficonnectID string) *Bot {
 	return &Bot{
-		OfiConnectID: oficonnect_id,
+		OfiConnectID: oficonnectID,
 		Client:       BuildClient(),
 	}
 }
@@ -46,18 +108,18 @@ func (b *Bot) RetriveEvents() ([]*Event, error) {
 	body, err := b.Client.Get(url)
 
 	if err != nil {
-		return nil, fmt.Errorf("[RetriveEvents] Unable to read body: %s", err.Error())
+		return nil, fmt.Errorf("[-] Unable to read body: %s", err.Error())
 	}
 
 	var response EventsResponse
 	err = json.Unmarshal(body, &response)
 
 	if err != nil {
-		return nil, fmt.Errorf("[RetriveEvents] Unable to parse response body: %s", err.Error())
+		return nil, fmt.Errorf("[-] Unable to parse response body: %s", err.Error())
 	}
 
 	if response.Status != "success" {
-		return nil, fmt.Errorf("[RetriveEvents] Failed response: %+v", response)
+		return nil, fmt.Errorf("[-] Failed response: %+v", response)
 	}
 
 	return response.Events, nil
@@ -76,31 +138,65 @@ func (b *Bot) RegisterForEvent(evt *Event) (*RegistrationResponse, error) {
 	body, err := b.Client.Post(url, bytes.NewBuffer(payload))
 
 	if err != nil {
-		return nil, fmt.Errorf("[RegisterForEvent] Unable to read body: %s", err.Error())
+		return nil, fmt.Errorf("[-] Unable to read body: %s", err.Error())
 	}
 
 	var response RegistrationResponse
 	err = json.Unmarshal(body, &response)
 
 	if err != nil {
-		return nil, fmt.Errorf("[RegisterForEvent] Unable to parse response body: %s", err.Error())
+		return nil, fmt.Errorf("[-] Unable to parse response body: %s", err.Error())
 	}
 
 	return &response, nil
 }
 
-// func (b *Bot) RetrivePersonalInformation() *PersonalInformation {
-//
-// }
+func (b *Bot) RetrivePersonalInformation() (*MarshalInformation, error) {
+	url := fmt.Sprintf("https://api.oficonnect.omdai.org/public/auth/datos-personales/obtener/%s", b.OfiConnectID)
+	body, err := b.Client.Get(url)
+
+	if err != nil {
+		return nil, fmt.Errorf("[-] Unable to read body: %s", err.Error())
+	}
+
+	var response PersonalInformationResponse
+	err = json.Unmarshal(body, &response)
+
+	if err != nil {
+		return nil, fmt.Errorf("[-] Unable to parse response body: %s", err.Error())
+	}
+
+	info := response.PersonalInformation[0]
+	info.Level = response.Level[0]
+
+	return info, nil
+}
+
+func (b *Bot) RetriveConfirmationsByEvent(eventID string) (int, error) {
+	url := fmt.Sprintf("https://api.oficonnect.omdai.org/public/auth/eventos-usuario/confirmados/obtener/%s", eventID)
+	body, err := b.Client.Get(url)
+
+	if err != nil {
+		return -1, fmt.Errorf("[-] Unable to read body: %s", err.Error())
+	}
+
+	var response QuotaResponse
+	err = json.Unmarshal(body, &response)
+
+	if err != nil {
+		return -1, fmt.Errorf("[-] Unable to parse response body: %s", err.Error())
+	}
+
+	count, err := strconv.Atoi(response.Confirmations[0].Count)
+
+	if err != nil {
+		return -1, fmt.Errorf("[-] Invalid number in confirmations: %s", err.Error())
+	}
+
+	return count, nil
+}
 
 // # documentos
-// 'https://api.oficonnect.omdai.org/public/auth/datos-personales/avisos/obtener/#{oficonnect_id}'
-//
-// # datos personales
-// 'https://api.oficonnect.omdai.org/public/auth/datos-personales/obtener/#{oficonnect_id}'
-//
-// # confirmados por evento?
-// 'https://api.oficonnect.omdai.org/public/auth/eventos-usuario/confirmados/obtener/#{event_id}'
-//
+// 'https://api.oficonnect.omdai.org/public/auth/datos-personales/avisos/obtener/#{oficonnectID}'
 // # cursos
-// 'https://api.oficonnect.omdai.org/public/auth/cursos-usuario/obtener-todos/#{oficonnect_id}/normal'
+// 'https://api.oficonnect.omdai.org/public/auth/cursos-usuario/obtener-todos/#{oficonnectID}/normal'
