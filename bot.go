@@ -4,31 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"os"
 )
 
 type Bot struct {
 	OfiConnectID string
+	Client       *Client
 }
 
-type EventsResponse struct {
-	Status string   `json:"status"`
-	Events []*Event `json:"eventos"`
-}
-
-type RegistrationRequest struct {
-	ID       string `json:"id"`
-	EventID  string `json:"id_evento"`
-	UserID   string `json:"id_usuario"`
-	Confimed string `json:"confirmado"`
-}
-
-type RegistrationResponse struct {
-	Status         string `json:"status"`
-	Limit          int    `json:"limite"`
-	TotalConfirmed int    `json:"total_confirmados"`
+type PersonalInformation struct {
 }
 
 type Event struct {
@@ -50,28 +33,17 @@ type Event struct {
 	CreatedAt    string `json:"fecha_creado"`
 }
 
+func BuildBot(oficonnect_id string) *Bot {
+	return &Bot{
+		OfiConnectID: oficonnect_id,
+		Client:       BuildClient(),
+	}
+}
+
 func (b *Bot) RetriveEvents() ([]*Event, error) {
 	url := fmt.Sprintf("https://api.oficonnect.omdai.org/public/auth/eventos-usuario/obtener/%s", b.OfiConnectID)
 
-	client := &http.Client{}
-
-	req, err := http.NewRequest("GET", url, nil)
-
-	if err != nil {
-		return nil, fmt.Errorf("[RetriveEvents] Unable to create request: %s", err.Error())
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("OFICONNECT_TOKEN")))
-
-	resp, err := client.Do(req)
-
-	if err != nil {
-		return nil, fmt.Errorf("[RetriveEvents] Problems with request: %s", err.Error())
-	}
-
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
+	body, err := b.Client.Get(url)
 
 	if err != nil {
 		return nil, fmt.Errorf("[RetriveEvents] Unable to read body: %s", err.Error())
@@ -94,8 +66,6 @@ func (b *Bot) RetriveEvents() ([]*Event, error) {
 func (b *Bot) RegisterForEvent(evt *Event) (*RegistrationResponse, error) {
 	url := "https://api.oficonnect.omdai.org/public/auth/eventos-usuario/evento/confirmar"
 
-	client := &http.Client{}
-
 	payload, err := json.Marshal(RegistrationRequest{
 		ID:       evt.ID,
 		EventID:  evt.EventID,
@@ -103,27 +73,7 @@ func (b *Bot) RegisterForEvent(evt *Event) (*RegistrationResponse, error) {
 		Confimed: "1",
 	})
 
-	if err != nil {
-		return nil, fmt.Errorf("[RegisterForEvent] Unable parse request body: %s", err.Error())
-	}
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
-
-	if err != nil {
-		return nil, fmt.Errorf("[RegisterForEvent] Unable to create request: %s", err.Error())
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("OFICONNECT_TOKEN")))
-
-	resp, err := client.Do(req)
-
-	if err != nil {
-		return nil, fmt.Errorf("[RegisterForEvent] Problems with request: %s", err.Error())
-	}
-
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
+	body, err := b.Client.Post(url, bytes.NewBuffer(payload))
 
 	if err != nil {
 		return nil, fmt.Errorf("[RegisterForEvent] Unable to read body: %s", err.Error())
@@ -138,6 +88,10 @@ func (b *Bot) RegisterForEvent(evt *Event) (*RegistrationResponse, error) {
 
 	return &response, nil
 }
+
+// func (b *Bot) RetrivePersonalInformation() *PersonalInformation {
+//
+// }
 
 // # documentos
 // 'https://api.oficonnect.omdai.org/public/auth/datos-personales/avisos/obtener/#{oficonnect_id}'
