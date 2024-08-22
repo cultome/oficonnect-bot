@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"os/user"
+	"path/filepath"
 )
 
 type BotConfig struct {
 	Excludes []string `json:"excludes"`
 }
 
-const FILEPATH = "/home/csoria/.oficonnectbot.json"
-
 func ReadConfig() *BotConfig {
-	content, err := os.ReadFile(FILEPATH)
+	content, err := os.ReadFile(ConfigFilePath())
 
 	if err != nil {
 		log.Fatalf("Unable to read config file: %s", err.Error())
@@ -32,5 +32,15 @@ func (c *BotConfig) Persist() {
 		log.Fatalf("Unable to read config file")
 	}
 
-	os.WriteFile(FILEPATH, data, 0644)
+	os.WriteFile(ConfigFilePath(), data, 0644)
+}
+
+func ConfigFilePath() string {
+	usr, err := user.Current()
+
+	if err != nil {
+		log.Fatalf("Unable to get user directory")
+	}
+
+	return filepath.Join(usr.HomeDir, ".oficonnectbot.json")
 }
