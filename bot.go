@@ -104,18 +104,12 @@ func BuildBot(oficonnectID string) *Bot {
 
 func (b *Bot) RetriveEvents() ([]*Event, error) {
 	url := fmt.Sprintf("https://api.oficonnect.omdai.org/public/auth/eventos-usuario/obtener/%s", b.OfiConnectID)
-
-	body, err := b.Client.Get(url)
-
-	if err != nil {
-		return nil, fmt.Errorf("[-] Unable to read body: %s", err.Error())
-	}
-
 	var response EventsResponse
-	err = json.Unmarshal(body, &response)
+
+	err := b.Client.Get(url, &response)
 
 	if err != nil {
-		return nil, fmt.Errorf("[-] Unable to parse response body: %s", err.Error())
+		return nil, fmt.Errorf("%s", err.Error())
 	}
 
 	if response.Status != "success" {
@@ -127,6 +121,7 @@ func (b *Bot) RetriveEvents() ([]*Event, error) {
 
 func (b *Bot) RegisterForEvent(evt *Event) (*RegistrationResponse, error) {
 	url := "https://api.oficonnect.omdai.org/public/auth/eventos-usuario/evento/confirmar"
+	var response RegistrationResponse
 
 	payload, err := json.Marshal(RegistrationRequest{
 		ID:       evt.ID,
@@ -135,35 +130,19 @@ func (b *Bot) RegisterForEvent(evt *Event) (*RegistrationResponse, error) {
 		Confimed: "1",
 	})
 
-	body, err := b.Client.Post(url, bytes.NewBuffer(payload))
+	err = b.Client.Post(url, bytes.NewBuffer(payload), &response)
 
-	if err != nil {
-		return nil, fmt.Errorf("[-] Unable to read body: %s", err.Error())
-	}
-
-	var response RegistrationResponse
-	err = json.Unmarshal(body, &response)
-
-	if err != nil {
-		return nil, fmt.Errorf("[-] Unable to parse response body: %s", err.Error())
-	}
-
-	return &response, nil
+	return &response, err
 }
 
 func (b *Bot) RetrivePersonalInformation() (*MarshalInformation, error) {
 	url := fmt.Sprintf("https://api.oficonnect.omdai.org/public/auth/datos-personales/obtener/%s", b.OfiConnectID)
-	body, err := b.Client.Get(url)
+	var response PersonalInformationResponse
+
+	err := b.Client.Get(url, &response)
 
 	if err != nil {
 		return nil, fmt.Errorf("[-] Unable to read body: %s", err.Error())
-	}
-
-	var response PersonalInformationResponse
-	err = json.Unmarshal(body, &response)
-
-	if err != nil {
-		return nil, fmt.Errorf("[-] Unable to parse response body: %s", err.Error())
 	}
 
 	info := response.PersonalInformation[0]
@@ -174,14 +153,9 @@ func (b *Bot) RetrivePersonalInformation() (*MarshalInformation, error) {
 
 func (b *Bot) RetriveConfirmationsByEvent(eventID string) (int, error) {
 	url := fmt.Sprintf("https://api.oficonnect.omdai.org/public/auth/eventos-usuario/confirmados/obtener/%s", eventID)
-	body, err := b.Client.Get(url)
-
-	if err != nil {
-		return -1, fmt.Errorf("[-] Unable to read body: %s", err.Error())
-	}
-
 	var response QuotaResponse
-	err = json.Unmarshal(body, &response)
+
+	err := b.Client.Get(url, &response)
 
 	if err != nil {
 		return -1, fmt.Errorf("[-] Unable to parse response body: %s", err.Error())

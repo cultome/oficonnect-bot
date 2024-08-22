@@ -1,6 +1,7 @@
 package oficonnectbot
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,21 +14,21 @@ func BuildClient() *Client {
 	return &Client{}
 }
 
-func (c *Client) Get(url string) ([]byte, error) {
-	return request(url, "GET", nil)
+func (c *Client) Get(url string, response any) error {
+	return request(url, "GET", nil, response)
 }
 
-func (c *Client) Post(url string, payload io.Reader) ([]byte, error) {
-	return request(url, "POST", payload)
+func (c *Client) Post(url string, payload io.Reader, response any) error {
+	return request(url, "POST", payload, response)
 }
 
-func request(url, method string, payload io.Reader) ([]byte, error) {
+func request(url, method string, payload io.Reader, response any) error {
 	client := &http.Client{}
 
 	req, err := http.NewRequest(string(method), url, payload)
 
 	if err != nil {
-		return nil, fmt.Errorf("[-] Unable to create request: %s", err.Error())
+		return fmt.Errorf("[-] Unable to create request: %s", err.Error())
 	}
 
 	req.Header.Add("Content-Type", "application/json")
@@ -36,11 +37,17 @@ func request(url, method string, payload io.Reader) ([]byte, error) {
 	resp, err := client.Do(req)
 
 	if err != nil {
-		return nil, fmt.Errorf("[-] Problems with request: %s", err.Error())
+		return fmt.Errorf("[-] Problems with request: %s", err.Error())
 	}
 
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 
-	return body, err
+	err = json.Unmarshal(body, response)
+
+	if err != nil {
+		return fmt.Errorf("[-] Unable to parse response body: %s", err.Error())
+	}
+
+	return nil
 }
