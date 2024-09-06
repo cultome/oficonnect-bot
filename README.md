@@ -13,6 +13,8 @@ $ set -x OFICONNECT_TOKEN <oficonnect_token>
 $ ./bin/daemon <oficonnect_id>
 ```
 
+TIP: mix it with `watch` to run it periodically.
+
 To add an event to the exclusion list (not registering automatically), use the `manager`
 
 ```bash
