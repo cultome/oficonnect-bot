@@ -37,7 +37,13 @@ func main() {
 			}
 
 			confirmations, _ := bot.RetriveConfirmationsByEvent(evt.EventID)
-			log.Printf("[%s] %5t (%2s/%2d) - %s\n", evt.EventID, evt.Confimed == "1", evt.Quota, confirmations, evt.EventName)
+
+			confirm := "Sin confirmar"
+			if evt.Confimed == "1" {
+				confirm = "Confirmado"
+			}
+
+			log.Printf("[%s] {%s} (%2d/%2s) - %s\n", evt.EventID, confirm, confirmations, evt.Quota, evt.EventName)
 		}
 	}
 }
