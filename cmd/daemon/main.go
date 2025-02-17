@@ -9,7 +9,12 @@ import (
 
 func main() {
 	oficonnect_id := os.Args[1]
+	checkOnly := os.Args[2] != ""
 	log.Printf("[*] Getting events for %s...", oficonnect_id)
+
+	if checkOnly {
+		log.Printf("[*] !!!! CHECK ONLY MODE !!!!!!")
+	}
 
 	config := oficonnectbot.ReadConfig()
 	bot := oficonnectbot.BuildBot(oficonnect_id)
@@ -17,7 +22,7 @@ func main() {
 	info, err := bot.RetrivePersonalInformation()
 
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err.Error())
 	}
 
 	log.Printf("Events for Marshal [%s] %s %s", info.ID, info.Name, info.LastName)
@@ -25,14 +30,16 @@ func main() {
 	events, err := bot.RetriveEvents()
 
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err.Error())
 	}
 
 	for _, evt := range events {
 		if evt.Open == "1" {
-			if evt.Confimed == "0" {
-				if !isExcluded(config.Excludes, evt) {
-					tryToRegister(evt, bot)
+			if !checkOnly {
+				if evt.Confimed == "0" {
+					if !isExcluded(config.Excludes, evt) {
+						tryToRegister(evt, bot)
+					}
 				}
 			}
 
@@ -54,7 +61,7 @@ func tryToRegister(evt *oficonnectbot.Event, bot *oficonnectbot.Bot) {
 	registrationResponse, err := bot.RegisterForEvent(evt)
 
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err.Error())
 	}
 
 	if registrationResponse.Status == "lleno" {
