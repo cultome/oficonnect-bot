@@ -3,13 +3,15 @@ package main
 import (
 	"log"
 	"os"
+	"slices"
 
 	oficonnectbot "github.com/cultome/oficonnect-bot"
+	"github.com/fatih/color"
 )
 
 func main() {
 	oficonnect_id := os.Args[1]
-	checkOnly := os.Args[2] != ""
+	checkOnly := os.Args[2] == "true"
 	log.Printf("[*] Getting events for %s...", oficonnect_id)
 
 	if checkOnly {
@@ -25,7 +27,7 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	log.Printf("Events for Marshal [%s] %s %s", info.ID, info.Name, info.LastName)
+	log.Printf("Events for Marshal [%d] %s %s", info.ID, info.Name, info.LastName)
 
 	events, err := bot.RetriveEvents()
 
@@ -34,9 +36,9 @@ func main() {
 	}
 
 	for _, evt := range events {
-		if evt.Open == "1" {
+		if evt.Open == 1 {
 			if !checkOnly {
-				if evt.Confimed == "0" {
+				if evt.Confimed == 0 {
 					if !isExcluded(config.Excludes, evt) {
 						tryToRegister(evt, bot)
 					}
@@ -46,11 +48,11 @@ func main() {
 			confirmations, _ := bot.RetriveConfirmationsByEvent(evt.EventID)
 
 			confirm := "Sin confirmar"
-			if evt.Confimed == "1" {
+			if evt.Confimed == 1 {
 				confirm = "Confirmado"
 			}
 
-			log.Printf("[%s] {%s} (%2d/%2s) - %s\n", evt.EventID, confirm, confirmations, evt.Quota, evt.EventName)
+			color.Blue("[%d] {%s} (%2d/%2s) - %s\n", evt.EventID, confirm, confirmations, evt.Quota, evt.EventName)
 		}
 	}
 }
@@ -64,21 +66,19 @@ func tryToRegister(evt *oficonnectbot.Event, bot *oficonnectbot.Bot) {
 		log.Fatal(err.Error())
 	}
 
-	if registrationResponse.Status == "lleno" {
-		log.Printf("[-] El registro para [%s] esta lleno!", evt.EventName)
+	if registrationResponse.Message == "Cupo lleno" {
+		color.Red("[-] El registro para [%s] esta lleno!", evt.EventName)
 	} else if registrationResponse.Status == "error" {
-		log.Printf("[-] Ocurrio un error al registrate a [%s]!", evt.EventName)
+		color.Red("[-] Ocurrio un error al registrate a [%s]! %s", evt.EventName, registrationResponse.Message)
 	} else {
-		log.Printf("[+] Te acabas de registrar para [%s]!", evt.EventName)
+		color.Red("[+] Te acabas de registrar para [%s]!", evt.EventName)
 	}
 }
 
-func isExcluded(excludes []string, evt *oficonnectbot.Event) bool {
-	for _, eventID := range excludes {
-		if eventID == evt.EventID {
-			log.Printf("[-] Excluding event [%s]!", evt.EventID)
-			return true
-		}
+func isExcluded(excludes []int, evt *oficonnectbot.Event) bool {
+	if slices.Contains(excludes, evt.EventID) {
+		log.Printf("[-] Excluding event [%d]!", evt.EventID)
+		return true
 	}
 
 	return false

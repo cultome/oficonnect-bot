@@ -9,7 +9,7 @@ import (
 )
 
 type BotConfig struct {
-	Excludes []string `json:"excludes"`
+	Excludes []int `json:"excludes"`
 }
 
 func ReadConfig() *BotConfig {

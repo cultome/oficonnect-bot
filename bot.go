@@ -13,7 +13,7 @@ type Bot struct {
 }
 
 type MarshalInformation struct {
-	ID             string `json:"id"`
+	ID             int    `json:"id"`
 	CountryID      string `json:"id_pais"`
 	Name           string `json:"nombres"`
 	LastName       string `json:"apellido_paterno"`
@@ -25,7 +25,7 @@ type MarshalInformation struct {
 	HomePhone      string `json:"tel_domicilio"`
 	PersonalPhone  string `json:"tel_personal"`
 	English        string `json:"ingles"`
-	Resident       string `json:"residente"`
+	Resident       int    `json:"residente"`
 	PhotoURL       string `json:"url_foto"`
 	Languages      string `json:"idiomas"`
 	CreatedAt      string `json:"created_at"`
@@ -35,12 +35,12 @@ type MarshalInformation struct {
 }
 
 type Level struct {
-	ID          string `json:"id"`
-	UserLevelID string `json:"id_usuario_nivel"`
-	LevelID     string `json:"id_nivel"`
+	ID          int    `json:"id"`
+	UserLevelID int    `json:"id_usuario_nivel"`
+	LevelID     int    `json:"id_nivel"`
 	Type        string `json:"tipo"`
 	Name        string `json:"nombre"`
-	Stars       string `json:"estrellas"`
+	Stars       int    `json:"estrellas"`
 }
 
 type PersonalInformationResponse struct {
@@ -50,20 +50,20 @@ type PersonalInformationResponse struct {
 }
 
 type Event struct {
-	ID           string `json:"id"`
-	Active       string `json:"activo"`
-	Open         string `json:"abierto"`
-	EventID      string `json:"id_evento"`
+	ID           int    `json:"id"`
+	Active       int    `json:"activo"`
+	Open         int    `json:"abierto"`
+	EventID      int    `json:"id_evento"`
 	EventName    string `json:"nombre_evento"`
 	CategoryName string `json:"nombre_categoria"`
 	DivisionName string `json:"nombre_division"`
-	Confimed     string `json:"confirmado"`
+	Confimed     int    `json:"confirmado"`
 	Quota        string `json:"cupo"`
 	FileURL      string `json:"url_file"`
 	Role         string `json:"role"`
-	PositionID   string `json:"id_puesto"`
+	PositionID   int    `json:"id_puesto"`
 	PositionName string `json:"nombre_puesto"`
-	UserID       string `json:"id_usuario"`
+	UserID       int    `json:"id_usuario"`
 	UpdatedAt    string `json:"fecha_actualizado"`
 	CreatedAt    string `json:"fecha_creado"`
 }
@@ -74,14 +74,15 @@ type EventsResponse struct {
 }
 
 type RegistrationRequest struct {
-	ID       string `json:"id"`
-	EventID  string `json:"id_evento"`
-	UserID   string `json:"id_usuario"`
+	ID       int    `json:"id"`
+	EventID  int    `json:"id_evento"`
+	UserID   int    `json:"id_usuario"`
 	Confimed string `json:"confirmado"`
 }
 
 type RegistrationResponse struct {
 	Status         string `json:"status"`
+	Message        string `json:"message"`
 	Limit          int    `json:"limite"`
 	TotalConfirmed int    `json:"total_confirmados"`
 }
@@ -130,6 +131,10 @@ func (b *Bot) RegisterForEvent(evt *Event) (*RegistrationResponse, error) {
 		Confimed: "1",
 	})
 
+	if err != nil {
+		return nil, fmt.Errorf("%s", err.Error())
+	}
+
 	err = b.Client.Post(url, bytes.NewBuffer(payload), &response)
 
 	return &response, err
@@ -151,8 +156,8 @@ func (b *Bot) RetrivePersonalInformation() (*MarshalInformation, error) {
 	return info, nil
 }
 
-func (b *Bot) RetriveConfirmationsByEvent(eventID string) (int, error) {
-	url := fmt.Sprintf("https://api.oficonnect.omdai.org/public/auth/eventos-usuario/confirmados/obtener/%s", eventID)
+func (b *Bot) RetriveConfirmationsByEvent(eventID int) (int, error) {
+	url := fmt.Sprintf("https://api.oficonnect.omdai.org/public/auth/eventos-usuario/confirmados/obtener/%d", eventID)
 	var response QuotaResponse
 
 	err := b.Client.Get(url, &response)
