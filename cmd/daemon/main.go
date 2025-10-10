@@ -12,7 +12,7 @@ import (
 func main() {
 	oficonnect_id := os.Args[1]
 	checkOnly := os.Args[2] == "true"
-	log.Printf("[*] Getting events for %s...", oficonnect_id)
+	// log.Printf("[*] Getting events for %s...", oficonnect_id)
 
 	if checkOnly {
 		log.Printf("[*] !!!! CHECK ONLY MODE !!!!!!")
@@ -39,9 +39,11 @@ func main() {
 		if evt.Open == 1 {
 			if !checkOnly {
 				if evt.Confimed == 0 {
-					if !isExcluded(config.Excludes, evt) {
-						tryToRegister(evt, bot)
+					if isExcluded(config.Excludes, evt) {
+						continue
 					}
+
+					tryToRegister(evt, bot)
 				}
 			}
 
@@ -50,6 +52,10 @@ func main() {
 			confirm := "Sin confirmar"
 			if evt.Confimed == 1 {
 				confirm = "Confirmado"
+			}
+
+			if isExcluded(config.Excludes, evt) {
+				continue
 			}
 
 			color.Blue("[%d] {%s} (%2d/%2s) - %s\n", evt.EventID, confirm, confirmations, evt.Quota, evt.EventName)
@@ -76,10 +82,5 @@ func tryToRegister(evt *oficonnectbot.Event, bot *oficonnectbot.Bot) {
 }
 
 func isExcluded(excludes []int, evt *oficonnectbot.Event) bool {
-	if slices.Contains(excludes, evt.EventID) {
-		log.Printf("[-] Excluding event [%d]!", evt.EventID)
-		return true
-	}
-
-	return false
+	return slices.Contains(excludes, evt.EventID)
 }
